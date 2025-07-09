@@ -2,6 +2,9 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name="keywords" content="instant, encrypted, peer2peer, p2p, ppp, ptp, peer-to-peer, messanger, instant messanger">
+        <meta name="author" content="Lars the Penguin">
+        <meta name="author" content="Ethan Bazinet">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Ethars - Contact</title>
         <link href="style.css" rel="stylesheet">
@@ -9,22 +12,63 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+        <script src="script.js"></script>
+        <script>
+var id = 0
+
+document.addEventListener('mousemove', (event) => {
+        var sliderchild = document.getElementById("sliderchild");
+        var yeah = event.clientX-200
+        if (yeah < 0) yeah = 0;
+        if (yeah > 400) yeah = 400
+        sliderchild.ariaValueNow = yeah;
+    });
+
+window.onmousedown = (event) => {
+    if (event.target == document.getElementById("slider") || event.target == document.getElementById("sliderchild")) {
+        id = setInterval(() => {
+            var sliderchild = document.getElementById("sliderchild");
+            var mouse = sliderchild.ariaValueNow
+            sliderchild.style.setProperty("max-width", mouse+"px");
+            sliderchild.style.setProperty("min-width", mouse+"px");
+        }, 10,)
+    }
+}
+
+window.onmouseup = () => {
+    clearInterval(id)
+}
+        </script>
     </head>
     <body style="background-color: #0A0E15;">
         <!-- Navbar -->
         <div id="navbar" style="max-height: 40px; position: sticky; z-index: 999; top: 5px;">
-            <img onclick="window.location = '/index.html'" alt="logo" src="images/ethars.svg" height="140" style="margin-top: -55px; margin-left: 17%;" class="shadow">
-            <button class="button-6 shadow" onclick="alert('check if logged in')" style="font-size: 16px; border-radius: 100px; top: -60px; margin-left: 10%;">Sign up</button>
-            <p style="color: #fff; margin-top: -90px; margin-left: 55%;" onclick="alert('check if logged in')" class="shadow">Chat</p>
-            <p style="color: #fff; margin-top: -35px; margin-left: 70%; max-width: fit-content; background-color: #292841; padding: 8px; border-radius: 10px; margin-top: -40px;" onclick="window.location = '/contact.html'" class="shadow">Contact</p>
-            <!-- Main -->
-             <img alt="Photo of people around a thumbs up" src="images/thumbsup.png" height="300" style="position: absolute; margin-left: 50%; margin-top: 165px; filter: saturate(0.3); z-index: 99;">
-        <img alt="Photo of people around a thumbs up" src="images/thumbsup.png" height="300" style="position: absolute; margin-left: 50%; margin-top: 454px; opacity: 10%; transform: scale(1, -1); filter: saturate(0.3); z-index: 99;">
-            <!-- Footer -->
-        <div id="footer" style="background-color: #5a4e77; margin: 0; padding: 0; margin-top: 800px;">
+            <img tabindex="0" onclick="window.location = '/index.html'" alt="logo" src="images/ethars.svg" height="140" style="margin-top: -55px; margin-left: 17%;" class="shadow">
+            <button onclick="checkIfSignedUp()" tabindex="1" class="button-6 shadow" style="font-size: 16px; border-radius: 100px; top: -60px; margin-left: 10%;">Sign up</button>
+            <p tabindex="2" style="color: #fff; margin-top: -90px; margin-left: 55%; cursor: pointer; width: fit-content;" onclick="checkIfSignedUp()" class="shadow">Chat</p>
+            <p tabindex="3" style="color: #fff; margin-top: -35px; margin-left: 70%; cursor: pointer; width: fit-content; background-color: #292841; padding: 6px; border-radius: 10px;" onclick="window.location = '/contact.html'" class="shadow">Feedback</p>
+        </div>
+        <!-- Main -->
+        <img alt="Photo of people around a thumbs up" src="images/thumbsup.png" height="350" style="position: absolute; margin-left: 50%; margin-top: 115px; filter: saturate(0.3); z-index: 99;">
+        <img alt="Photo of people around a thumbs up" src="images/thumbsup.png" height="350" style="position: absolute; margin-left: 50%; margin-top: 455px; opacity: 10%; transform: scale(1, -1); filter: saturate(0.3); z-index: 99;">
+        <div id="contactUs" style=" margin-top: 200px; margin-left: 200px; max-width: 600px;" ><h1 style=" font-size: 80px; color: #fff; font-family: 'IBM Plex Mono', monospace; font-weight: 500;">Give Us Your <br>Feedback!</h1></div>
+        <div id="feedback" style=" max-width: 768px; margin-left: 200px;">
+            <div id="slider" style="background-color: rgb(255, 255, 255); min-height: 12px; max-height: 12px; min-width: 80px; max-width: 400px; border-radius: 10px; margin-bottom: 10px;">
+                <div id="sliderchild" style="background-color: #2d2b70; min-height: 12px; min-width: 40px; max-width: 200px; border-radius: 10px;"></div>
+            </div>
+            <img src="images/frown.png" alt="Frown" height="24px" style="filter: invert(1);">
+            <img src="images/Smile.png" alt="Smile" height="24px" style="filter: invert(1); margin-left: 347px;">
+            <br><br>
+            <label style=' margin-top: 300px; margin-left: 70px; color: #fff; font-family: "IBM Plex Mono", monospace;'>Enter Any Feedback</label>
+            <textarea class="input__field" type="text" placeholder=" " id="feedback"></textarea>
+            <button class="button-6 shadow" style="font-size: 16px; border-radius: 100px; top: 30px;">Submit</button>
+        </div>
+        <div id="email" style=" margin-top: 200px; margin-left: 200px; max-width: 600px;" ><h1 style=" font-size: 30px; color: #fff; font-family: 'IBM Plex Mono', monospace; font-weight: 500;">You can communicate with us at <a style="color: #fff" href="mailto:etharswebsite@gmail.com">etharswebsite@gmail.com</a></h1></div>
+        <!-- Footer -->
+        <div id="footer" style="background-color: #5a4e77; margin: 0; padding: 0; margin-top: 50px;">
             <img alt="logo" src="images/ethars.svg" height="140" style="margin-left: 17%;">
             <p style='font-family: "IBM Plex Mono", monospace; color: #fff; font-weight: 400; margin-left: 800px; font-size: 16px; max-width: 800px; position: absolute; margin-top: -80px;'>You can contact us via E-Mail at <a style="color: #fff" href="mailto:etharswebsite@gmail.com">etharswebsite@gmail.com</a></p>
-        </div>
+            <label class="input centered" style="margin-top: 2vh; display: flex;">
         </div>
     </body>
 </html>

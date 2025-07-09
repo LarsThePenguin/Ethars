@@ -2,7 +2,7 @@ body {
   user-select: none;
   font-family: system-ui,-apple-system,system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;
   background: linear-gradient(-195deg, #0A0E15, #1b0e3a);
-  min-height: 99vh;
+  min-height: 99.9vh;
   background-repeat: no-repeat;
   padding: 0;
   margin: 0;

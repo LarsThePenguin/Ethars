@@ -2,6 +2,9 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name="keywords" content="instant, encrypted, peer2peer, p2p, ppp, ptp, peer-to-peer, messanger, instant messanger">
+        <meta name="author" content="Lars the Penguin">
+        <meta name="author" content="Ethan Bazinet">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Ethars - Chat</title>
         <link href="style.css" rel="stylesheet">
@@ -9,14 +12,36 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+        <script src="script.js"></script>
+        <script>
+            function yeah(id) {
+                var usernameShown = document.getElementById(id);
+                usernameShown.innerHTML = "@"+getCookies(document.cookie)["username"];
+            }
+            function createUserInSidebar(username, request) {
+                var users = document.getElementById("users")
+                var user = document.createElement("div")
+                var test = ""
+                if (request) {test = '<a style="color: #fff; position: absolute; margin-top: 49px; margin-left: 217px; text-decoration: underline; font-weight: 200;">Accept request</a></div>';}
+                user.innerHTML = '<div style="display: flex; border: #292841 solid 5px; border-left: 0; width: 320px; border-top: 0;"><img src="images/account.svg" height="64px" style="filter: invert(1); padding-top: 5px;"><h2 style="color: #fff; padding-left: 10px; font-weight: 200;">'+username+'</h2>'+test;
+                users.appendChild(user)
+            }
+            setTimeout(createUserInSidebar, 100, 'Example user', true)
+        </script>
     </head>
-    <body style="background-color: #0A0E15;">
+    <body style="background-color: #0A0E15; background: linear-gradient(-195deg, #0A0E15, #292841)" onload="yeah('usernamebtn')">
         <!-- Navbar -->
         <div id="navbar" style="max-height: 40px; position: sticky; z-index: 999; top: 5px;">
-            <img onclick="window.location = '/index.html'" alt="logo" src="images/ethars.svg" height="140" style="margin-top: -55px; margin-left: 17%;" class="shadow">
-            <button class="button-6 shadow" onclick="alert('check if logged in')" style="font-size: 16px; border-radius: 100px; top: -60px; margin-left: 10%;">Sign up</button>
-            <p style="color: #fff; margin-top: -90px; margin-left: 55%;" onclick="alert('check if logged in')" class="shadow">Chat</p>
-            <p style="color: #fff; margin-top: -35px; margin-left: 70%;" onclick="window.location = '/contact.html'" class="shadow">Contact</p>
+            <img tabindex="0" onclick="window.location = '/index.html'" alt="logo" src="images/ethars.svg" height="140" style="margin-top: -55px; margin-left: 17%;" class="shadow">
+            <button tabindex="1" id="usernamebtn" class="button-6 shadow" style="font-size: 16px; border-radius: 100px; top: -60px; margin-left: 10%;" onclick="checkIfSignedUp()">Sign up</button>
+            <p tabindex="2" style="color: #fff; margin-top: -95px; margin-left: 55%; cursor: pointer; width: fit-content; background-color: #292841; padding: 6px; border-radius: 10px;" onclick="checkIfSignedUp()" class="shadow">Chat</p>
+            <p tabindex="3" style="color: #fff; margin-top: -42px; margin-left: 70%; cursor: pointer; width: fit-content;" onclick="window.location = '/contact.html'" class="shadow">Feedback</p>
         </div>
+        <!-- Main -->
+        <div id="users" style="border-right: #292841 solid 5px; width: 320px; min-height: calc(99vh - 40px);">
+        </div>
+        <label class="input centered" style="display: flex; margin-top: -80px">
+            <input class="input__field" type="text" placeholder="Type Here..." id="textinput">
+        </label>
     </body>
 </html>

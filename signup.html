@@ -2,6 +2,9 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
+        <meta name="keywords" content="instant, encrypted, peer2peer, p2p, ppp, ptp, peer-to-peer, messanger, instant messanger">
+        <meta name="author" content="Lars the Penguin">
+        <meta name="author" content="Ethan Bazinet">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Ethars - Sign up</title>
         <link href="style.css" rel="stylesheet">
@@ -23,8 +26,9 @@
                         if (xhr.status == 422) {
                             alert("That username is taken, try again.")
                         } else if (xhr.status == 201) {
-                            document.cookie += "username="+user
-                            document.cookie += "password="+pswd;
+                            document.cookie = "username="+user+"; ";
+                            document.cookie = "password="+pswd+"; ";
+                            window.location = "/chat.html";
                         } else {
                             alert("Unknown error.")
                         }
@@ -34,30 +38,51 @@
                     alert("Password and Password Confirmation did not match");
                 }
             }
+            function signin() {
+                var user = document.getElementById("1username").value;
+                var pswd = document.getElementById("1password").value;
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", "http://penguinpolar.net:8000/api/login")
+                xhr.setRequestHeader("username", user)
+                xhr.setRequestHeader("pswd", pswd)
+                xhr.onload = () => {
+                    if (xhr.status == 401) {
+                        alert("Username or password incorrect")
+                    } else if (xhr.status == 200) {
+                        document.cookie = "username="+user+"; ";
+                        document.cookie = "password="+pswd+"; ";
+                        window.location = "/chat.html";
+                    } else {
+                        alert("Unknown error.")
+                    }
+                };
+                xhr.send()
+            }
         </script>
+        <script src="script.js"></script>
     </head>
     <body style="background-color: #0A0E15;">
-       <!-- Navbar -->
+        <!-- Navbar -->
         <div id="navbar" style="max-height: 40px; position: sticky; z-index: 999; top: 5px;">
-            <img onclick="window.location = '/index.html'" alt="logo" src="images/ethars.svg" height="140" style="margin-top: -55px; margin-left: 17%;" class="shadow">
-            <button class="button-6 shadow" onclick="alert('check if logged in')" style="font-size: 16px; border-radius: 100px; top: -60px; margin-left: 10%; background-color: #292841; color: #fff;">Sign up</button>
-            <p style="color: #fff; margin-top: -90px; margin-left: 55%; cursor: pointer;" onclick="alert('check if logged in')" class="shadow">Chat</p>
-            <p style="color: #fff; margin-top: -35px; margin-left: 70%; cursor: pointer;" onclick="window.location = '/contact.html'" class="shadow">Contact</p>
+            <img tabindex="0" onclick="window.location = '/index.html'" alt="logo" src="images/ethars.svg" height="140" style="margin-top: -55px; margin-left: 17%;" class="shadow">
+            <button onclick="checkIfSignedUp()" tabindex="1" class="button-6 shadow" style="color: #fff; font-size: 16px; border-radius: 100px; top: -60px; margin-left: 10%; background-color: #292841;">Sign up</button>
+            <p tabindex="2" style="color: #fff; margin-top: -90px; margin-left: 55%; cursor: pointer; width: fit-content;" onclick="checkIfSignedUp()" class="shadow">Chat</p>
+            <p tabindex="3" style="color: #fff; margin-top: -35px; margin-left: 70%; cursor: pointer; width: fit-content;" onclick="window.location = '/contact.html'" class="shadow">Feedback</p>
         </div>
         <div style="display: flex;">
             <!-- Sign Up -->
             <div id="signup" style="background-color: #1E1E26; max-width: 768px; border-radius: 35px; margin-left: 250px; margin-top: 150px;">
                 <h1 class="centered" style='font-family: "IBM Plex Mono", monospace; color: #fff; font-weight: 300; font-size: 60px; max-width: 542px; text-align: center;'>Create an <b>Ethars</b> account</h1>
 			    <label class="input centered" style="margin-top: 2vh; display: flex;">
-			    	<input class="input__field" type="text" placeholder=" " id="username"/>
+			    	<input class="input__field" type="text" placeholder=" " id="username" pattern="[a-zA-Z0-9]+" required>
 			    	<span class="input__label">Username</span>
 			    </label>
                 <label class="input centered" style="margin-top: 2vh; display: flex;">
-			    	<input class="input__field" type="password" placeholder=" " id="password"/>
+			    	<input class="input__field" type="password" placeholder=" " id="password" required>
 			    	<span class="input__label">Password</span>
 			    </label>
                 <label class="input centered" style="margin-top: 2vh; display: flex;">
-			    	<input class="input__field" type="password" placeholder=" " id="password2"/>
+			    	<input class="input__field" type="password" placeholder=" " id="password2" required>
 			    	<span class="input__label">Confirm Password</span>
 			    </label>
                 <p class="centered" style='font-family: "IBM Plex Mono", monospace; color: #fff; max-width: 512px; font-size: 10px; text-align: center;'><b>WARNING: DO NOT USE A PASSWORD YOU ACTUALLY USE ELSEWHERE</b>, Passwords are stored in plaintext and are unencrypted, and our backend is also unencrypted.</p>
@@ -68,14 +93,14 @@
             <div id="signin" style="background-color: #1E1E26; max-width: 768px; border-radius: 35px; margin-left: 300px; margin-top: 150px;">
                 <h1 class="centered" style='font-family: "IBM Plex Mono", monospace; color: #fff; font-weight: 300; font-size: 60px; max-width: 542px; text-align: center;'>Sign into to your account</h1>
 			    <label class="input centered" style="margin-top: 2vh; display: flex;">
-			    	<input class="input__field" type="text" placeholder=" " id="1username"/>
+			    	<input class="input__field" type="text" placeholder=" " id="1username" pattern="[a-zA-Z0-9]+" required>
 			    	<span class="input__label">Username</span>
 			    </label>
                 <label class="input centered" style="margin-top: 2vh; display: flex;">
-			    	<input class="input__field" type="password" placeholder=" " id="1password"/>
+			    	<input class="input__field" type="password" placeholder=" " id="1password" required>
 			    	<span class="input__label">Password</span>
 			    </label>
-                <button class="button-6 shadow" style="font-size: 16px; border-radius: 100px; top: 110px; margin-left: 220px;">Sign in</button>
+                <button class="button-6 shadow" style="font-size: 16px; border-radius: 100px; top: 110px; margin-left: 220px;" onclick="signin()">Sign in</button>
             </div>
         </div>
         <!-- Footer -->
