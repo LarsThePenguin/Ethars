@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Ethars - Sign up</title>
+        <link href="style.css" rel="stylesheet">
+        <link href="images/favicon.png" rel="icon" type="image/png">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+        <script>
+            function signup() {
+                var user = document.getElementById("username").value;
+                var pswd = document.getElementById("password").value;
+                var pswd2 = document.getElementById("password2").value;
+                if (pswd == pswd2) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", "http://penguinpolar.net:8000/api/createAccount")
+                    xhr.setRequestHeader("username", user)
+                    xhr.setRequestHeader("pswd", pswd)
+                    xhr.onload = () => {
+                        if (xhr.status == 422) {
+                            alert("That username is taken, try again.")
+                        } else if (xhr.status == 201) {
+                            document.cookie += "username="+user
+                            document.cookie += "password="+pswd;
+                        } else {
+                            alert("Unknown error.")
+                        }
+                    };
+                    xhr.send()
+                } else {
+                    alert("Password and Password Confirmation did not match");
+                }
+            }
+        </script>
+    </head>
+    <body style="background-color: #0A0E15;">
+       <!-- Navbar -->
+        <div id="navbar" style="max-height: 40px; position: sticky; z-index: 999; top: 5px;">
+            <img onclick="window.location = '/index.html'" alt="logo" src="images/ethars.svg" height="140" style="margin-top: -55px; margin-left: 17%;" class="shadow">
+            <button class="button-6 shadow" onclick="alert('check if logged in')" style="font-size: 16px; border-radius: 100px; top: -60px; margin-left: 10%; background-color: #292841; color: #fff;">Sign up</button>
+            <p style="color: #fff; margin-top: -90px; margin-left: 55%; cursor: pointer;" onclick="alert('check if logged in')" class="shadow">Chat</p>
+            <p style="color: #fff; margin-top: -35px; margin-left: 70%; cursor: pointer;" onclick="window.location = '/contact.html'" class="shadow">Contact</p>
+        </div>
+        <div style="display: flex;">
+            <!-- Sign Up -->
+            <div id="signup" style="background-color: #1E1E26; max-width: 768px; border-radius: 35px; margin-left: 250px; margin-top: 150px;">
+                <h1 class="centered" style='font-family: "IBM Plex Mono", monospace; color: #fff; font-weight: 300; font-size: 60px; max-width: 542px; text-align: center;'>Create an <b>Ethars</b> account</h1>
+			    <label class="input centered" style="margin-top: 2vh; display: flex;">
+			    	<input class="input__field" type="text" placeholder=" " id="username"/>
+			    	<span class="input__label">Username</span>
+			    </label>
+                <label class="input centered" style="margin-top: 2vh; display: flex;">
+			    	<input class="input__field" type="password" placeholder=" " id="password"/>
+			    	<span class="input__label">Password</span>
+			    </label>
+                <label class="input centered" style="margin-top: 2vh; display: flex;">
+			    	<input class="input__field" type="password" placeholder=" " id="password2"/>
+			    	<span class="input__label">Confirm Password</span>
+			    </label>
+                <p class="centered" style='font-family: "IBM Plex Mono", monospace; color: #fff; max-width: 512px; font-size: 10px; text-align: center;'><b>WARNING: DO NOT USE A PASSWORD YOU ACTUALLY USE ELSEWHERE</b>, Passwords are stored in plaintext and are unencrypted, and our backend is also unencrypted.</p>
+                <button class="button-6 shadow" style="font-size: 16px; border-radius: 100px; top: 0px; margin-left: 220px;" onclick="signup()">Sign up</button>
+                <br><br>
+            </div>
+            <!-- Sign In -->
+            <div id="signin" style="background-color: #1E1E26; max-width: 768px; border-radius: 35px; margin-left: 300px; margin-top: 150px;">
+                <h1 class="centered" style='font-family: "IBM Plex Mono", monospace; color: #fff; font-weight: 300; font-size: 60px; max-width: 542px; text-align: center;'>Sign into to your account</h1>
+			    <label class="input centered" style="margin-top: 2vh; display: flex;">
+			    	<input class="input__field" type="text" placeholder=" " id="1username"/>
+			    	<span class="input__label">Username</span>
+			    </label>
+                <label class="input centered" style="margin-top: 2vh; display: flex;">
+			    	<input class="input__field" type="password" placeholder=" " id="1password"/>
+			    	<span class="input__label">Password</span>
+			    </label>
+                <button class="button-6 shadow" style="font-size: 16px; border-radius: 100px; top: 110px; margin-left: 220px;">Sign in</button>
+            </div>
+        </div>
+        <!-- Footer -->
+        <div id="footer" style="background-color: #5a4e77; margin: 0; padding: 0; margin-top: 110px;">
+            <img alt="logo" src="images/ethars.svg" height="140" style="margin-left: 17%;">
+            <p style='font-family: "IBM Plex Mono", monospace; color: #fff; font-weight: 400; margin-left: 800px; font-size: 16px; max-width: 800px; position: absolute; margin-top: -80px;'>You can contact us via E-Mail at <a style="color: #fff" href="mailto:etharswebsite@gmail.com">etharswebsite@gmail.com</a></p>
+        </div>
+    </body>
+</html>

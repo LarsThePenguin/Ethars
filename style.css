@@ -1,0 +1,114 @@
+body {
+  user-select: none;
+  font-family: system-ui,-apple-system,system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  background: linear-gradient(-195deg, #0A0E15, #1b0e3a);
+  min-height: 99vh;
+  background-repeat: no-repeat;
+  padding: 0;
+  margin: 0;
+  --color-light: rgb(30, 32, 38);
+  --color-background: var(--color-light);
+  --size-bezel: 0.5rem;
+  --size-radius: 4px;
+}
+
+.centered {
+    justify-content: center;
+    margin-left: auto;
+    margin-right: auto;
+    align-items: center;
+}
+
+.shadow {
+   filter: drop-shadow(1px 1px black) drop-shadow(1px -1px black)drop-shadow(-1px 1px black) drop-shadow(-1px -1px black);
+}
+
+.button-6 {
+  align-items: center;
+  background-color: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: .25rem;
+  box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
+  box-sizing: border-box;
+  color: rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: system-ui,-apple-system,system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  justify-content: center;
+  line-height: 1.25;
+  margin: 0;
+  min-height: 2rem;
+  padding: calc(.875rem - 6px) calc(1.5rem - 6px);
+  position: relative;
+  text-decoration: none;
+  transition: all 250ms;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  vertical-align: baseline;
+  width: auto;
+}
+
+.button-6:hover,
+.button-6:focus {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.button-6:hover {
+  transform: translateY(-1px);
+}
+
+.button-6:active {
+  background-color: #F0F0F1;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: rgba(0, 0, 0, 0.06) 0 2px 4px;
+  color: rgba(0, 0, 0, 0.65);
+  transform: translateY(0);
+}
+
+.input {
+    
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+    font-family: "IBM Plex Mono", monospace;
+}
+.input__label {
+    position: absolute;
+    top: 0;
+    padding: calc(var(--size-bezel) * 0.75) calc(var(--size-bezel) * 0.5);
+    margin: calc(var(--size-bezel) * 0.75 + 3px) calc(var(--size-bezel) * 0.5);
+    white-space: nowrap;
+    background: var(--color-background);
+    transition: transform 120ms ease-in;
+    font-weight: bold;
+    line-height: 1.2;
+    color: rgb(255, 255, 255);
+}
+.input__field {
+    box-sizing: border-box;
+    display: block;
+    width: 40%;
+    border: 3px solid currentColor;
+    padding: calc(var(--size-bezel) * 1.5) var(--size-bezel);
+    color: rgb(255, 255, 255);
+    background: transparent;
+    border-radius: var(--size-radius);
+}
+.input__field:not(:-moz-placeholder-shown) + .input__label {
+    transform: translate(0.25rem, -65%) scale(0.8);
+    color: rgb(255, 255, 255);
+}
+.input__field:not(:-ms-input-placeholder) + .input__label {
+    transform: translate(0.25rem, -65%) scale(0.8);
+    color: rgb(255, 255, 255);
+}
+.input__field:focus + .input__label,
+.input__field:not(:placeholder-shown) + .input__label {
+    transform: translate(0.25rem, -65%) scale(0.8);
+    color: rgb(255, 255, 255);
+}
