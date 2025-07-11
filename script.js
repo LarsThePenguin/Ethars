@@ -10,8 +10,8 @@ function checkIfSignedUp() {
     var cookies = getCookies(document.cookie);
     var cookiesKeys = Object.keys(cookies);
     if (cookiesKeys.includes("username") && cookiesKeys.includes("password")) {
-        window.location = "chat.html";
+        window.location = "/chat.html";
     } else {
-        window.location = "signup.html";
+        window.location = "/signup.html";
     }
 }

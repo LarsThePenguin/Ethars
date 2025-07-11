@@ -3,8 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="keywords" content="instant, encrypted, peer2peer, p2p, ppp, ptp, peer-to-peer, messanger, instant messanger">
-        <meta name="author" content="Lars the Penguin">
-        <meta name="author" content="Ethan Bazinet">
+        <meta name="author" content="Lars the Penguin, Ethan Bazinet">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Ethars - Chat</title>
         <link href="style.css" rel="stylesheet">
@@ -13,23 +12,237 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
         <script src="script.js"></script>
+        <style>
+            ::-webkit-scrollbar {
+              background: #121424;
+            }
+            
+            ::-webkit-scrollbar-thumb {
+              background: #292841;
+              border-radius: 10px;
+            }
+        </style>
         <script>
             function yeah(id) {
                 var usernameShown = document.getElementById(id);
                 usernameShown.innerHTML = "@"+getCookies(document.cookie)["username"];
             }
+            var username = getCookies(document.cookie)["username"];
+            var password = getCookies(document.cookie)["password"];
             function createUserInSidebar(username, request) {
                 var users = document.getElementById("users")
                 var user = document.createElement("div")
                 var test = ""
-                if (request) {test = '<a style="color: #fff; position: absolute; margin-top: 49px; margin-left: 217px; text-decoration: underline; font-weight: 200;">Accept request</a></div>';}
+                if (request) {test = '<a style="cursor: pointer; color: #fff; position: absolute; margin-top: 49px; margin-left: 217px; text-decoration: underline; font-weight: 200;" onclick="acceptConnection('+"'"+username+"'"+')">Accept request</a></div>';}
                 user.innerHTML = '<div style="display: flex; border: #292841 solid 5px; border-left: 0; width: 320px; border-top: 0;"><img src="images/account.svg" height="64px" style="filter: invert(1); padding-top: 5px;"><h2 style="color: #fff; padding-left: 10px; font-weight: 200;">'+username+'</h2>'+test;
                 users.appendChild(user)
             }
-            setTimeout(createUserInSidebar, 100, 'Example user', true)
+            var userFriends = [];
+            var userOffers = {};
+            let peer, dataChannel;
+            let targetusr;
+            setInterval(async () => {
+                var req = await fetch(`http://penguinpolar.net:8000/api/user`, {
+                    method: 'GET',
+                    headers: { "username": username, "pswd": password},
+                });
+                var json = await req.json()
+                console.log(json)
+                var incoming = json["incomingRequests"]
+                console.log(incoming)
+                for (var inreq of incoming) {
+                    console.log(inreq)
+                    if (!(userFriends.includes(inreq[0]))) {
+                        createUserInSidebar(inreq[0], true)
+                        userFriends.push(inreq[0])
+                        userOffers[inreq[0]] = inreq[1]
+                    }
+                }
+            }, 5000)
+            function sendMessage() {
+                const input = document.getElementById('textinput');
+                const message = input.value;
+                input.value = '';
+                if (dataChannel && dataChannel.readyState === 'open') {
+                    dataChannel.send(message);
+                    var messages = document.getElementById("messages")
+                    var msg = document.createElement("div")
+                    var test = ""
+                    msg.innerHTML = '<span class="message-6" style="float: right; margin-right: 80px;">'+message+'</span><br><br><br>';
+                    messages.appendChild(msg)
+                } else {
+                    console.log("Data channel is not open.");
+                }
+            }
+            function waitForIceGatheringComplete(pc) {
+                return new Promise(resolve => {
+                    if (pc.iceGatheringState === 'complete') {
+                        resolve();
+                    } else {
+                        const checkState = () => {
+                            if (pc.iceGatheringState === 'complete') {
+                                pc.removeEventListener('icegatheringstatechange', checkState);
+                                resolve();
+                            }
+                        };
+                        pc.addEventListener('icegatheringstatechange', checkState);
+                    }
+                });
+            }
+            async function connectToUser(target) {
+                targetusr = target;
+                setupPeer();
+                dataChannel = peer.createDataChannel('chat');
+                setupDataChannel();
+                    
+                const offer = await peer.createOffer();
+                await peer.setLocalDescription(offer);
+                console.log(peer.iceGatheringState)
+                await waitForIceGatheringComplete(peer);
+                console.log(peer.iceGatheringState)
+                    
+                await fetch(`http://penguinpolar.net:8000/api/requestConnect`, {
+                  method: 'POST',
+                  headers: {
+                    "Content-Type": "application/json",
+                    "username": username,
+                    "pswd": password,
+                    "otheruser": target
+                  },
+                  body: JSON.stringify({ offer: peer.localDescription })
+                });
+              
+                // Poll for answer
+                for (let i = 0; i < 20; i++) {
+                  const res = await fetch(`http://penguinpolar.net:8000/api/getAnswer`, {
+                    method: 'POST',
+                    headers: {
+                      "Content-Type": "application/json",
+                      "username": username,
+                      "pswd": password,
+                      "otheruser": target
+                    }
+                  });
+                
+                  if (res.status === 200) {
+                    const json = await res.json();
+                    await peer.setRemoteDescription(new RTCSessionDescription(json.answer));
+                    await pollCandidates(target);
+                    break;
+                  }
+                  await new Promise(r => setTimeout(r, 1000));
+                }
+            }
+        
+            async function acceptConnection(target) {
+                targetusr = target;
+                setupPeer();
+
+                const res = await fetch(`http://penguinpolar.net:8000/api/getOffer`, {
+                  method: 'POST',
+                  headers: {
+                    "Content-Type": "application/json",
+                    "username": username,
+                    "pswd": password,
+                    "otheruser": target
+                  }
+                });
+            
+                const json = await res.json();
+                const offer = json.offer;
+            
+                await peer.setRemoteDescription(new RTCSessionDescription(offer));
+                const answer = await peer.createAnswer();
+                await peer.setLocalDescription(answer);
+                console.log(peer.iceGatheringState)
+                await waitForIceGatheringComplete(peer);
+                console.log(peer.iceGatheringState)
+            
+                await fetch(`http://penguinpolar.net:8000/api/sendAnswer`, {
+                  method: 'POST',
+                  headers: {
+                    "Content-Type": "application/json",
+                    "username": username,
+                    "pswd": password,
+                    "otheruser": target
+                  },
+                  body: JSON.stringify({ answer: peer.localDescription })
+                });
+                await pollCandidates(target);
+            }
+            function setupDataChannel() {
+                console.log("setup data channel")
+                dataChannel.onmessage = (e) => {
+                    var messages = document.getElementById("messages")
+                    var msg = document.createElement("div")
+                    var test = ""
+                    msg.innerHTML = '<span class="message-6" style="float: left; margin-right: 80px; background-color: #292841; color: #fff">'+e.data+'</span><br><br><br>';
+                    messages.appendChild(msg)
+                };
+            }
+            async function pollCandidates(target) {
+                for (let i = 0; i < 20; i++) {
+                    const res = await fetch(`http://penguinpolar.net:8000/api/getCandidates`, {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json",
+                            "username": username,
+                            "pswd": password,
+                            "otheruser": target
+                        }
+                    });
+                
+                    const json = await res.json();
+                    for (const c of json.candidates) {
+                        try {
+                            await peer.addIceCandidate(new RTCIceCandidate(c));
+                            console.log("Added ICE candidate:", c);
+                        } catch (err) {
+                            console.error("Failed to add ICE candidate:", err);
+                        }
+                    }
+                
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
+            function setupPeer() {
+                document.getElementById("textinput").placeholder = "Send message to "+targetusr;
+                peer = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+                    iceTransportPolicy: 'all'
+                });
+                
+                peer.ondatachannel = (event) => {
+                    console.log("EEEEEEEEEEEEEEEEEEEEEE")
+                    dataChannel = event.channel;
+                    setupDataChannel();
+                };
+                peer.addEventListener("selectedcandidatepairchange", (event) => {console.log(event)})
+                peer.onicecandidate = async (event) => {
+                    if (event.candidate) {
+                        console.log("Sending ICE candidate:", event.candidate);
+                        await fetch(`http://penguinpolar.net:8000/api/sendCandidate`, {
+                            method: 'POST',
+                            headers: {
+                                "Content-Type": "application/json",
+                                "username": username,
+                                "pswd": password,
+                                "otheruser": targetusr // you'll need to track this
+                            },
+                            body: JSON.stringify({ candidate: event.candidate })
+                        });
+                    }
+                };
+            }
+            function askToAddUser() {
+                var user = prompt("Enter the user you want to add (exclude the @ symbol)");
+                if (user.length > 0) {
+                    connectToUser(user);
+                }
+            }
         </script>
     </head>
-    <body style="background-color: #0A0E15; background: linear-gradient(-195deg, #0A0E15, #292841)" onload="yeah('usernamebtn')">
+    <body style="background: none; background-color: #121424;" onload="yeah('usernamebtn')">
         <!-- Navbar -->
         <div id="navbar" style="max-height: 40px; position: sticky; z-index: 999; top: 5px;">
             <img tabindex="0" onclick="window.location = '/index.html'" alt="logo" src="images/ethars.svg" height="140" style="margin-top: -55px; margin-left: 17%;" class="shadow">
@@ -38,10 +251,85 @@
             <p tabindex="3" style="color: #fff; margin-top: -42px; margin-left: 70%; cursor: pointer; width: fit-content;" onclick="window.location = '/contact.html'" class="shadow">Feedback</p>
         </div>
         <!-- Main -->
-        <div id="users" style="border-right: #292841 solid 5px; width: 320px; min-height: calc(99vh - 40px);">
+        <div id="users" style="border-right: #292841 solid 5px; width: 320px; min-height: calc(99vh - 40px); overflow-y: scroll;">
+            <button class="button-6 shadow" style="font-size: 32px; background-color: #fff; border-radius: 100px; margin-top: 840px; position: absolute; margin-left: 130px; max-width: 50px; max-height: 50px;" onclick="askToAddUser()">+</button>
+        </div>
+        <div id="messages" style="overflow-y: scroll; display: flexbox; position: absolute; margin-top: -900px; margin-left: 420px; width: 1500px; min-height: 90%; flex-wrap: wrap;">
+            
         </div>
         <label class="input centered" style="display: flex; margin-top: -80px">
             <input class="input__field" type="text" placeholder="Type Here..." id="textinput">
         </label>
-    </body>
+        <button class="button-6 shadow" style="font-size: 16px; background-color: #fff; border-radius: 100px; margin-top: -45px; position: absolute; margin-left: 1370px; max-width: 50px; max-height: 50px;" onclick="sendMessage()"><img src="images/paper-plane.svg" alt="Send Button" width="30px" style="filter: invert(0);"></button>
+    <!--
+⠀⠀⠀⠀⠀⠀⣀⣤⣶⣶⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢀⣾⠛⠁⢰⣧⡈⢻⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢸⣇⣼⡀⠻⠟⠁⠀⢻⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⢀⡞⣹⠙⣧⡀⠀⠀⡀⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⣀⡴⠋⠀⣀⣴⣿⡷⠴⠞⠁⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⢾⣁⣀⡤⠾⠛⠁⣸⠀⠀⠀⠀⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠈⠁⠀⠀⠀⠀⢠⡟⠀⠀⠀⠀⣾⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣠⣿⠁⠀⠀⠀⢀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⣰⡿⠁⠀⠀⠀⠀⠀⢿⣶⠶⠿⠟⠿⠿⣶⣦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⣼⠟⠀⠀⠀⠀⠀⠀⠀⠈⠻⣄⠀⠀⠀⠀⠀⠈⠙⠛⠿⠶⣶⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀                  _
+⠀⠀⣸⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⢀⣀⣠⣤⣤⣤⣤⣤⣀⠀⠉⠙⠳⢦⣄⡀⣀⣤⣀⣀⡄⠀            .__(.)<
+⠀⢀⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠁⠀⠀⠀⠀⠀⠈⠉⠻⢶⣀⠀⠀⠈⠉⢁⠈⠏⣿⣁⠀              \___)
+⠀⢸⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠻⣦⣀⣀⡴⠁⠀⠀⢙⣿⡾            ~~~~~~~~~~~~~
+⠀⠘⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠀⠀⣀⣠⡾⠟⠃
+⠀⠀⠹⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⡔⢊⣵⠞⠋⠁⠀⠀⠀
+⠀⠀⠀⠙⠿⣦⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠚⠉⠀⣠⣴⠟⠁⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠈⠙⠳⠶⣤⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⢤⣤⣴⠊⣁⣤⠶⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀                    ~~The Land of Ducks~~ 
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠙⠛⡷⢶⡶⠶⠤⠔⢺⠃⡟⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀            ~~The Gift of Duckiness Helped Us Succeed~~
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⠀⢰⡇⠀⡇⠀⠀⠀⢸⠀⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀                     ~~All Hail The Ducks~~
+⠀⠀⠀⠀⠀⠀⠀⠀⠈⣹⣤⣭⠿⠟⣃⣾⠋⠀⠀⢠⡟⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠈⠉⠙⠛⢋⣿⣙⣶⣾⡿⢷⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠐⠛⠛⠻⠧⠶⠾⠛⠁⠀
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⣿⣿⡿⢋⣩⣭⣶⣶⣮⣭⡙⠿⣿⣿⣿⣿⣿⣿
+⣿⣿⣿⣿⣿⣿⠿⣋⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡙⢿⣿⣿⣿
+⣿⣿⣿⣿⣿⡃⠄⠹⡿⣿⣿⣿⣿⠟⠛⣿⣿⣿⣿⣷⡌⢿⣿⣿
+⣿⣿⣿⣿⣿⠐⣠⡶⣶⣲⡎⢻⣿⣤⣴⣾⣿⣿⣿⣿⣿⠸⣿⣿
+⣿⠟⣋⡥⡶⣞⡯⣟⣾⣺⢽⡧⣥⣭⣉⢻⣿⣿⣿⣿⣿⣆⢻⣿
+⡃⣾⢯⢿⢽⣫⡯⣷⣳⢯⡯⠯⠷⠻⠞⣼⣿⣿⣿⣿⣿⣿⡌⣿
+⣦⣍⡙⠫⠛⠕⣋⡓⠭⣡⢶⠗⣡⣶⡝⣿⣿⣿⣿⣿⣿⣿⣧⢹
+⣿⣿⣿⣿⣿⣿⣘⣛⣋⣡⣵⣾⣿⣿⣿⢸⣿⣿⣿⣿⣿⣿⣿⢸
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢸⣿⣿⣿⣿⣿⣿⣿⢸
+⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢸⣿⣿⣿⣿⣿⣿⣿⢸
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣴⣶⣶⣿⣶⣶⣦⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⡿⠟⠛⠋⠉⠙⠛⠻⢿⣿⣿⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣿⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀  ⠻⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⠃⠀⠀⠀⠀⠀⠀⠀⣠⣤⣤⣄⠀⠀⠘⣿⣿⣆⣀⣀⣀⣀⣀⣀⡀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⠀⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠋⠁⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿
+⠀⠀⠀⢀⣾⣿⣿⣿⣷⣦⣄⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⡟
+⠀⠀⣠⣿⣿⠟⠀⠉⠛⢿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⢿⣿⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⠟⠀
+⠀⣰⣿⣿⠋⠀⠀⠀⠀⠀⠙⢿⣿⣷⣄⠀⠀⠀⠀⠀⠘⢿⣿⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⣿⣿⣿⣿⠿⠿⠋⠁⠀⠀
+⢠⣿⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣿⡅⠀⠀⠀⠀⠀⠀⠀⠀
+⣼⣿⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠛⠛⠉⠉⠉⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⡀⠀⠀⠀⠀⠀⠀⠀
+⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   ⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀
+⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀  ⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀
+⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀  ⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀
+⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ ⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀
+⢻⣿⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ ⣼⣿⡟⠀⠀⠀⠀⠀⠀⠀
+⠘⣿⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⠃⠀⠀⠀⠀⠀⠀⠀
+⠀⢹⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⡏⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠻⣿⣿⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠙⢿⣿⣿⣷⣦⣤⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣤⣶⣿⣿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠈⠙⠛⠿⢿⣿⣿⣿⣶⣶⣤⣤⣤⣤⣄⣀⣀⣀⣤⣤⣤⣤⣴⣶⣾⣿⣿⣿⠿⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠛⠛⠻⠿⠿⠿⢿⣿⣿⡿⠿⠿⠿⠿⠛⠛⠋⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣠⠒⠈⠉⠀⠢⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢸⠃⣠⡀⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⣀⡠⣏⡀⠑⠁⠀⠀⠀⢸⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⢔⠙⣁⣀⠤⠷⠤⡴⠀⠀⢀⠏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⣠⠞⠀⠀⢀⠎⠀⣀⡤⠤⠒⠒⠒⠒⠒⠒⠲⠦⠤⠤⣠⡄⠀⠀⠀
+⠀⠀⠀⢀⠞⠁⠀⠀⠀⡮⠐⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠾⠀⣀⢤⠄
+⠀⠀⢀⠎⠀⠀⠀⠀⠘⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡀⠀⢐⡲⠭⡔
+⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢄⣀⣀⡨⠏⠁⠀⢚⠏
+⠀⠀⠂⠀⠀⠀⠀⠀⠀⠀⠈⠓⢤⣀⣨⠶⠤⠤⠛⠒⠒⠒⠉⠀⠀⠀⠀⠐⢋⠞
+⠀⠀⢰⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⠤⠔⠊⠁⠀
+⠀⠀⠀⠢⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡤⠖⠉⠁⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠉⠒⠤⠄⣀⣀⣀⣀⣀⣀⡀⠤⠄⠒⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢘⢳⠦⠘⠀⠀⠀⠀⠀⠀⠀⠀⠀
+    -->
+        </body>
 </html>
