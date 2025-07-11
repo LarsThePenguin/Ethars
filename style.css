@@ -10,6 +10,7 @@ body {
   --color-background: var(--color-light);
   --size-bezel: 0.5rem;
   --size-radius: 4px;
+  example-error: 10px;
 }
 
 .centered {
