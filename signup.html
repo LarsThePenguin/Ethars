@@ -28,7 +28,7 @@
                         } else if (xhr.status == 201) {
                             document.cookie = "username="+user+"; ";
                             document.cookie = "password="+pswd+"; ";
-                            window.location = "/chat.html";
+                            window.location = "chat.html";
                         } else {
                             alert("Unknown error.")
                         }
@@ -51,7 +51,7 @@
                     } else if (xhr.status == 200) {
                         document.cookie = "username="+user+"; ";
                         document.cookie = "password="+pswd+"; ";
-                        window.location = "/chat.html";
+                        window.location = "chat.html";
                     } else {
                         alert("Unknown error.")
                     }
